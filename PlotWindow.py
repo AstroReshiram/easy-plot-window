@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 
 
 class PlotWindow:
+    """Wrapper class that runs the plot window as an app in itself."""
     def __init__(self, fig: go.Figure = None):
         self.fig = fig
 
@@ -15,11 +16,13 @@ class PlotWindow:
 
 
 class _PlotWindow(qtw.QMainWindow):
+
     def __init__(self, fig: go.Figure = None):
         super().__init__()
         self.fig = fig
         self.setWindowTitle("Plot Window")
-        self.resize(1000, 800)
+        screen_size = qtw.QApplication.primaryScreen().availableGeometry()
+        self.resize(screen_size.width() // 4 * 3, screen_size.height() // 4 * 3)
         self.webengine = QtWebEngineWidgets.QWebEngineView(self)
 
         # Create widgets
@@ -27,15 +30,15 @@ class _PlotWindow(qtw.QMainWindow):
         self.setCentralWidget(widget)
 
         # Button
-        # self.plot_button = qtw.QPushButton('Plot', self)
-        # self.plot_button.clicked.connect(self.show_graph)
+        self.export_button = qtw.QPushButton("Export", self)
+        self.export_button.clicked.connect(self.export_image)
 
         layout = qtw.QVBoxLayout(widget)
         layout.addWidget(self.webengine)
-        # layout.addWidget(self.plot_button, alignment=QtCore.Qt.AlignHCenter)
+        layout.addWidget(self.export_button, alignment=QtCore.Qt.AlignHCenter)
 
-        self.webengine.setHtml(self.fig.to_html(include_plotlyjs='cdn'))
+        self.webengine.setHtml(self.fig.to_html(include_plotlyjs="cdn"))
 
-    def show_graph(self):
-        """Takes graph from plotly and plots it in a PySide6 window"""
-        self.webengine.setHtml(self.fig.to_html(include_plotlyjs='cdn'))
+    def export_image(self):
+        """Exports an image"""
+        self.fig.write_image("image.png")

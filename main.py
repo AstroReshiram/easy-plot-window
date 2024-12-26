@@ -24,5 +24,4 @@ fig.update_layout(
     yaxis_title='Y-axis',
 )
 
-
 PlotWindow(fig).run()
