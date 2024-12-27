@@ -31,21 +31,27 @@ mouse_listener_thread = threading.Thread(target=start_mouse_listener)
 mouse_listener_thread.start()
 
 global coords
-coords = np.array([[random.uniform(0, 10), random.uniform(0, 10)] for x in range(100)])
-vel = 0.1
-
+vel = 0.05
+coords = np.array(
+    [[random.uniform(0, 10),
+     random.uniform(0, 10),
+     random.uniform(-vel, vel),
+     random.uniform(-vel, vel)]
+    for x in range(100)]
+)
 
 def generate_coords():
     """Generate ten x y coordinates"""
     global coords
     while True:
-        # Move it randomly
-        vels = np.array([[random.uniform(-vel, vel), random.uniform(-vel, vel)] for x in range(100)])
-        coords = coords + vels
-        time.sleep(0.03)
+        # Reflect at 0 or 10.
+        coords[(coords[:, 0] > 10) | (coords[:, 0] < 0), 2] *= -1
+        coords[(coords[:, 1] > 10) | (coords[:, 1] < 0), 3] *= -1
+        coords[:, 0:2] = coords[:, 0:2] + coords[:, 2:4]
+        time.sleep(0.05)
 
 
-t = threading.Thread(target=generate_coords)
+t = threading.Thread(target=generate_coords, daemon=True)
 t.start()
 
 dash_app = dash.Dash(__name__, update_title=None)
@@ -54,7 +60,7 @@ dash_app.layout = html.Div([
     dcc.Graph(id='live-graph', style={'height': '100vh'}),
     dcc.Interval(
         id='interval-component',
-        interval=30,  # in milliseconds
+        interval=100,  # in milliseconds
         n_intervals=0
     )
 ])
