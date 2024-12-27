@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import plotly.graph_objects as go
+
 from PlotWindow import PlotWindow
 
 def generate_coords():
@@ -24,4 +25,20 @@ fig.update_layout(
     yaxis_title='Y-axis',
 )
 
-PlotWindow(fig).run()
+
+
+# b = PlotWindow(fig)
+# b.run()
+# b.exit()
+
+import plotly.express as px
+df = px.data.gapminder()
+fig1 = px.scatter(df, x="gdpPercap", y="lifeExp", animation_frame="year", animation_group="country",
+           size="pop", color="continent", hover_name="country",
+           log_x=True, size_max=55, range_x=[100,100000], range_y=[25,90])
+
+# app = QApplication([])
+PlotWindow().show([fig, fig1])
+#PlotWindow(fig1)
+
+# app.exec()

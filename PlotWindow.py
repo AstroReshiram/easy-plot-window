@@ -1,18 +1,28 @@
+from __future__ import annotations
+
 from PySide6 import QtWebEngineWidgets, QtCore
 from PySide6 import QtWidgets as qtw
+from threading import Thread
 import plotly.graph_objects as go
 
 
 class PlotWindow:
     """Wrapper class that runs the plot window as an app in itself."""
-    def __init__(self, fig: go.Figure = None):
-        self.fig = fig
+    def __init__(self, app: qtw.QApplication = None):
+        if app is None:
+            app = qtw.QApplication([])
+        self.app = app
 
-    def run(self):
-        app = qtw.QApplication([])
-        window = _PlotWindow(self.fig)
-        window.show()
-        app.exec()
+    def show(self, figs: go.Figure | list[go.Figure]):
+        if type(figs) is not list:
+            figs = [figs]
+        self.windows = [_PlotWindow(fig) for fig in figs]
+        for window in self.windows:
+            window.show()
+        self.app.exec()
+
+    def exit(self):
+        self.app.quit()
 
 
 class _PlotWindow(qtw.QMainWindow):
@@ -29,16 +39,26 @@ class _PlotWindow(qtw.QMainWindow):
         widget = qtw.QWidget(self)
         self.setCentralWidget(widget)
 
-        # Button
+        # Buttons
         self.export_button = qtw.QPushButton("Export", self)
         self.export_button.clicked.connect(self.export_image)
+        self.close_button = qtw.QPushButton("Close", self)
+        self.close_button.clicked.connect(self.close)
 
         layout = qtw.QVBoxLayout(widget)
         layout.addWidget(self.webengine)
-        layout.addWidget(self.export_button, alignment=QtCore.Qt.AlignHCenter)
 
-        self.webengine.setHtml(self.fig.to_html(include_plotlyjs="cdn"))
+        button_layout = qtw.QHBoxLayout()
+        button_layout.addWidget(self.export_button, alignment=QtCore.Qt.AlignHCenter)
+        button_layout.addWidget(self.close_button, alignment=QtCore.Qt.AlignHCenter)
+
+        layout.addLayout(button_layout)
+
+        self.webengine.setUrl(self.fig)
+        #self.webengine.setHtml(self.fig.to_html(include_plotlyjs="cdn"))
 
     def export_image(self):
         """Exports an image"""
-        self.fig.write_image("image.png")
+        file_path, _ = qtw.QFileDialog().getSaveFileName(self, "Save As...", "image.png", "*.png")
+        self.fig.write_image(file_path)
+
