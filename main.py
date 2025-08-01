@@ -8,12 +8,12 @@ def generate_coords():
     """Generate ten x y coordinates"""
     return np.array([[random.uniform(0,10), random.uniform(0,10)] for x in range(10)])
 
-coords = generate_coords()
+coords1 = generate_coords()
 
 # Create the scatter plot using Plotly
 fig = go.Figure(data=go.Scatter(
-    x=coords[:, 0],
-    y=coords[:, 1],
+    x=coords1[:, 0],
+    y=coords1[:, 1],
     mode='markers',
     marker=dict(size=10, color='blue', opacity=0.6),
 ))

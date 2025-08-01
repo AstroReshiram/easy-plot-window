@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from PySide6 import QtWebEngineWidgets, QtCore
 from PySide6 import QtWidgets as qtw
-from threading import Thread
 import plotly.graph_objects as go
 
 
@@ -13,7 +12,7 @@ class PlotWindow:
             app = qtw.QApplication([])
         self.app = app
 
-    def show(self, figs: go.Figure | list[go.Figure]):
+    def show(self, figs: go.Figure | str | list[go.Figure]):
         if type(figs) is not list:
             figs = [figs]
         self.windows = [_PlotWindow(fig) for fig in figs]
@@ -27,7 +26,7 @@ class PlotWindow:
 
 class _PlotWindow(qtw.QMainWindow):
 
-    def __init__(self, fig: go.Figure = None):
+    def __init__(self, fig: go.Figure | str = None):
         super().__init__()
         self.fig = fig
         self.setWindowTitle("Plot Window")
@@ -54,8 +53,10 @@ class _PlotWindow(qtw.QMainWindow):
 
         layout.addLayout(button_layout)
 
-        self.webengine.setUrl(self.fig)
-        #self.webengine.setHtml(self.fig.to_html(include_plotlyjs="cdn"))
+        if type(self.fig) is go.Figure:
+            self.webengine.setHtml(self.fig.to_html(include_plotlyjs="cdn"))
+        elif type(self.fig) is str:
+            self.webengine.setUrl(self.fig)
 
     def export_image(self):
         """Exports an image"""

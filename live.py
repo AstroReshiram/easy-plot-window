@@ -1,57 +1,106 @@
+import math
+
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
+from math import cos
 import plotly.graph_objs as go
 import time
-from pynput import mouse
 import threading
 import numpy as np
 import random
 
 from PlotWindow import PlotWindow
 
-# Global variable to store mouse coordinates
-mouse_coords = {'x': 0, 'y': 0}
 
+def initialize_coords(xmin, xmax, ymin, ymax, vel, n):
+    return np.array(
+        [[random.uniform(xmin, xmax),
+          random.uniform(ymin, ymax),
+          random.uniform(-vel, vel),
+          random.uniform(-vel, vel)]
+         for _ in range(n)]
+    )
 
-# Function to update mouse coordinates
-def on_move(x, y):
-    global mouse_coords
-    mouse_coords['x'] = x
-    mouse_coords['y'] = y
-
-
-# Set up the mouse listener in a separate thread
-def start_mouse_listener():
-    with mouse.Listener(on_move=on_move) as listener:
-        listener.join()
-
-
-mouse_listener_thread = threading.Thread(target=start_mouse_listener)
-mouse_listener_thread.start()
-
-global coords
+global coords1
 vel = 0.05
-coords = np.array(
-    [[random.uniform(0, 10),
-     random.uniform(0, 10),
-     random.uniform(-vel, vel),
-     random.uniform(-vel, vel)]
-    for x in range(100)]
-)
 
-def generate_coords():
+coords1 = initialize_coords(0, 5, 0, 10, vel, 10)
+coords2 = initialize_coords(5, 10, 0, 10, vel, 100)
+
+def move_coords():
     """Generate ten x y coordinates"""
-    global coords
+    next_time = time.time()
     while True:
-        # Reflect at 0 or 10.
-        coords[(coords[:, 0] > 10) | (coords[:, 0] < 0), 2] *= -1
-        coords[(coords[:, 1] > 10) | (coords[:, 1] < 0), 3] *= -1
-        coords[:, 0:2] = coords[:, 0:2] + coords[:, 2:4]
-        time.sleep(0.05)
+        if time.time() > next_time:
+            coords1[(coords1[:, 0] > 10) | (coords1[:, 0] < 0), 2] *= -1
+            coords1[(coords1[:, 1] > 10) | (coords1[:, 1] < 0), 3] *= -1
+            coords1[:, 0:2] = coords1[:, 0:2] + coords1[:, 2:4]
+
+            # coords2[(coords2[:, 0] > 10) | (coords2[:, 0] < 0), 2] *= -1
+            # coords2[(coords2[:, 1] > 10) | (coords2[:, 1] < 0), 3] *= -1
+            # coords2[:, 0:2] = coords2[:, 0:2] + coords2[:, 2:4]
+            next_time += 0.05
+            find_overlap()
+        else:
+            time.sleep(0.01)
+
+def vibrate_coords():
+    """Generate ten x y coordinates"""
+    next_time = time.time()
+    while True:
+        if time.time() > next_time:
+            coords1[:, 0:2] = coords1[:, 0:2] + np.array([[random.uniform(-vel, vel), random.uniform(-vel, vel)]for _ in range(len(coords1))])
+            next_time += 0.05
+            find_overlap()
+        else:
+            time.sleep(0.01)
 
 
-t = threading.Thread(target=generate_coords, daemon=True)
+def find_overlap():
+    diameter = 0.1
+    # Overlapping Xs
+    for p1 in coords1:
+        # Get the Xs
+        Xs = (coords1[:, 0] != p1[0]) & (coords1[:, 0] - 0.1 < p1[0]) & (p1[0] < coords1[:, 0] + 0.1)
+        Ys = (coords1[:, 1] != p1[1]) & (coords1[:, 1] - 0.1 < p1[1]) & (p1[1] < coords1[:, 1] + 0.1)
+        p2 = coords1[Xs & Ys, :]
+
+        # if len(p2) > 0:
+        #     print((p1,p2))
+        #     print((p1, p2))
+        #
+        #     # Calculate angle between the two points
+        #     # Or rather the ratio
+        #     # Take diameter as 0.1
+        #     diff = p2 - p1
+        #
+        #     # Calculate Angle of Collision == ratio of y/x where H is always 0.1
+        #     # theta = math.acos(diff[0]/0.1)
+        #
+        #     # Get the angle which is tan-1 o a
+        #     a = diff[0,0]
+        #     o = diff[0,1]
+        #     theta = math.atan(o/a)
+        #     psi = math.pi/2 - theta
+        #
+        #     ux1 =
+        #     uy1
+        #     ux2
+        #     uy2
+        #
+        #     # Calculate new vel for p1
+        #     # cos angle
+        #     # new_vx = vx cos theta + vy sin psi and
+        #     # new_vy = vx sin theta + vy cos psi
+        #     # where cos theta = A/H sin theta = O / H tan theta = O/A
+        #
+
+        # Only calculate once
+
+
+
+t = threading.Thread(target=move_coords, daemon=True)
 t.start()
 
 dash_app = dash.Dash(__name__, update_title=None)
@@ -70,11 +119,18 @@ dash_app.layout = html.Div([
                    Input('interval-component', 'n_intervals'))
 def update_graph_live(n):
     data = go.Scatter(
-        x=coords[:, 0],
-        y=coords[:, 1],
+        x=coords1[:, 0],
+        y=coords1[:, 1],
         mode='markers',
         marker=dict(size=10, color='red')
     )
+
+    # data2 = go.Scatter(
+    #     x=coords2[:, 0],
+    #     y=coords2[:, 1],
+    #     mode='markers',
+    #     marker=dict(size=10, color='blue')
+    # )
 
     layout = go.Layout(
         title='Live Mouse Coordinates',
